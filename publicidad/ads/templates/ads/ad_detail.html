@@ -36,8 +36,27 @@
 <p>
 {{ ad.text }}
 </p>
-<p>
+
+<!-- Area del comentario -->
+{% load crispy_forms_tags %}
+<form method="post" action="{% url 'ads:ad_comment_create' ad.id %}">
+    {% csrf_token %}
+    {{ comment_form|crispy }}
+<input type="submit" value="Submit">
+</form>
 </p>
+{% for comment in comments %}
+<p> {{ comment.text }}
+({{ comment.updated_at|naturaltime }})
+{% if user == comment.owner %}
+<a href="{% url 'ads:ad_comment_delete' comment.id %}"><i class="fa fa-trash"></i></a>
+{% endif %}
+</p>
+{% endfor %}
+
+
+
+
 <p>
 <a href="{% url 'ads:all' %}">All ads</a>
 </p>
