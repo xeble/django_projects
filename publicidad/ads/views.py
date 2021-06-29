@@ -7,20 +7,39 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.humanize.templatetags.humanize import naturaltime
+from django.db.models import Q
 
-
-class AdListView(OwnerListView):
-    model = Ad
+class AdListView(View):
     template_name = "ads/ad_list.html"
     def get(self, request) :
         ads_list = Ad.objects.all()
+        strval =  request.GET.get("search", False)
+
+
+        if strval :
+            # Simple title-only search
+            # objects = Post.objects.filter(title__contains=strval).select_related().order_by('-updated_at')[:10]
+
+            # Multi-field search
+            # __icontains for case-insensitive search
+            query = Q(title__icontains=strval)
+            query.add(Q(text__icontains=strval), Q.OR)
+            ads_list = Ad.objects.filter(query).select_related().order_by('-updated_at')[:10]
+        else :
+            ads_list = Ad.objects.all().order_by('-updated_at')[:10]
+            # rows = [{'id': 2}, {'id': 4} ... ]  (A list of rows)
+
         favorites = list()
         if request.user.is_authenticated:
-            # rows = [{'id': 2}, {'id': 4} ... ]  (A list of rows)
             rows = request.user.favorite_ads.values('id')
             # favorites = [2, 4, ...] using list comprehension
             favorites = [ row['id'] for row in rows ]
-        ctx = {'ad_list' : ads_list, 'favorites': favorites}
+            for obj in ads_list:
+                obj.natural_updated = naturaltime(obj.updated_at)
+
+
+        ctx = {'ad_list' : ads_list, 'favorites': favorites, 'search': strval}
         return render(request, self.template_name, ctx)
 
 
@@ -36,6 +55,7 @@ class AdDetailView(OwnerDetailView):
 
 class AdCreateView(LoginRequiredMixin, View):
     model = Ad
+    fields = ['title', 'text', 'tags']
     template_name = 'ads/ad_form.html'
     success_url = reverse_lazy('ads:all')
 
@@ -55,12 +75,14 @@ class AdCreateView(LoginRequiredMixin, View):
         ad = form.save(commit=False)
         ad.owner = self.request.user
         ad.save()
+        form.save_m2m()
         return redirect(self.success_url)
 
 
 
 class AdUpdateView(LoginRequiredMixin, View):
     model = Ad
+    fields = ['title', 'text', 'tags']
     template_name = 'ads/ad_form.html'
     success_url = reverse_lazy('ads:all')
 
@@ -80,6 +102,7 @@ class AdUpdateView(LoginRequiredMixin, View):
 
         ad = form.save(commit=False)
         ad.save()
+        form.save_m2m()
 
         return redirect(self.success_url)
 

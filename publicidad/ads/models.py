@@ -2,6 +2,7 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
 from django.conf import settings
+from taggit.managers import TaggableManager
 
 class Ad(models.Model) :
     id = models.AutoField(primary_key=True)
@@ -15,11 +16,13 @@ class Ad(models.Model) :
     updated_at = models.DateTimeField(auto_now=True)
     picture = models.BinaryField(null=True, editable=True)
     content_type = models.CharField(max_length=256, null=True, help_text='The MIMEType of the file')
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ads_owner')
     comments = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Comment', related_name='comments_owned')
 
     favorites = models.ManyToManyField(settings.AUTH_USER_MODEL,
         through='Fav', related_name='favorite_ads')
+
+    tags = TaggableManager(blank=True)
 
     # Shows up in the admin list
     def __str__(self):

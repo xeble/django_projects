@@ -1,6 +1,13 @@
 {% extends "base_menu.html" %}
 {% block content %}
 <h1>ADS</h1>
+<form>
+  <input type="text" placeholder="Search.." name="search"
+  {% if search %} value="{{ search }}" {% endif %}
+  >
+  <button type="submit"><i class="fa fa-search"></i></button>
+<a href="{% url 'ads:all' %}"><i class="fa fa-undo"></i></a>
+</form>
 <p>
 {% if ad_list %}
 <ul>
@@ -33,6 +40,12 @@
         </span>
         </a>
         {% endif %}
+        <small>
+        {% if ad.owner.username %}
+            posted by {{ ad.owner.username }}
+        {% endif %}
+        {{ ad.natural_updated }}
+        </small>
     </li>
   {% endfor %}
 </ul>
